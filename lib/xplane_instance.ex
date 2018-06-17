@@ -143,8 +143,8 @@ defmodule XPlane.Instance do
   end
   
 
-  def handle_cast(:stop, _from, state) do
-    {:stop, "stop()", :ok, state}
+  def handle_cast(:stop, state) do
+    {:stop, :normal, state}
   end
 
 
