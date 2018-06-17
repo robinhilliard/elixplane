@@ -3,7 +3,7 @@ eliXPLANE
 
 An X-Plane network interface for Elixir. So far:
 
-```$elixr
+```$elixir
   iex> XPlane.Instance.start
   {:ok, #PID<0.138.0>}
   iex> XPlane.Instance.list
@@ -23,3 +23,4 @@ An X-Plane network interface for Elixir. So far:
   iex> XPlane.Instance.stop
   :ok
 ```
+Currently assumes that X-Plane and Elixir are running on platforms with the same endedness byte order.
