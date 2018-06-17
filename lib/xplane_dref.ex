@@ -3,6 +3,12 @@ defmodule XPlane.DRef do
   Get and set X-Plane data references.
   """
   
+  defstruct [
+    instance: nil,
+    next_code: 0, # Next unique code number
+    values: %{},  # Just the raw message, do lazy decoding
+    drefs: %{}    # map dref strings to codes
+  ]
   
   use GenServer
   
@@ -12,7 +18,7 @@ defmodule XPlane.DRef do
   
   def start(instance, opts \\ []) do
     GenServer.start(__MODULE__,
-      :ok,
+      {:ok, instance},
       [name: name(instance) ++ opts])
   end
   
@@ -33,6 +39,11 @@ defmodule XPlane.DRef do
   
   
   # GensServer callbacks
+  
+  
+  def init({:ok, instance}) do
+    {:ok, %XPlane.DRef{instance: instance}}
+  end
   
   
   def handle_cast(:stop, state) do
