@@ -14,6 +14,7 @@ defmodule XPlane.Instance do
       computer_name: "Starboard",
       host: :xplane,
       ip: {192, 168, 0, 58},
+      addr: "192.168.0.58",
       major_version: 1,
       minor_version: 1,
       port: 49000,
@@ -27,9 +28,9 @@ defmodule XPlane.Instance do
   ```
   """
   
-  
   defstruct [
-    :ip,                  # IP Address of X-Plane instance
+    :ip,                  # IP Address of X-Plane instance as tuple
+    :addr,                # Same as dot separated string
     :major_version,       # 1 at the time of X-Plane 10.40
     :minor_version,       # 1 at the time of X-Plane 10.40
     :version_number,      # 104103 for X-Plane 10.41r3
@@ -68,6 +69,7 @@ defmodule XPlane.Instance do
       
         %XPlane.Instance{
           ip: ip,
+          addr: (ip |> Tuple.to_list |> Enum.join(".")),
           major_version: major_version,
           minor_version: minor_version,
           version_number: version_number,
