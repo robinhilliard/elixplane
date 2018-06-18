@@ -1,64 +1,35 @@
 defmodule XPlane.DRef do
   @moduledoc """
-  Get and set X-Plane data references.
+  Represent an X-Plane Data Reference (DREF) and provide helper methods
+  to load the closest available set of DREFs for a given X-Plane version
   """
   
+  
   defstruct [
-    instance: nil,
-    next_code: 0, # Next unique code number
-    values: %{},  # Just the raw message, do lazy decoding
-    drefs: %{}    # map dref strings to codes
+    name: "",
+    code: -1,
+    type: :void,
+    writable: false,
+    units: "???",
+    description: "???"
   ]
   
-  use GenServer
   
+  def load_compatible_drefs(version_number) do
+    exact = "DataRefs#{version_number}.txt"
+    
+    closest = "#{File.cwd!}/datarefs"
+    |> File.ls!
+    |> Enum.reverse
+    |> Enum.filter(&(&1 <= exact))
+    |> Enum.at(0)
+    
+    {:ok, file} = File.open("#{File.cwd!}/datarefs/#{closest}", [:read])
+    
+    for line <- IO.stream(file, :line) do
+      IO.inspect (line |> String.split("\t")) # TODO up to here
+    end
   
-  # API
-  
-  
-  def start(instance, opts \\ []) do
-    GenServer.start(__MODULE__,
-      {:ok, instance},
-      [name: name(instance) ++ opts])
   end
-  
-  
-  def request(instance, dref_freq) do
-    GenServer.cast(name(instance), {:request, dref_freq})
-  end
-
-  
-  def get(instance, dref_list) do
-    GenServer.call(name(instance), {:get, dref_list})
-  end
-  
-  
-  def stop(instance) do
-    GenServer.cast(name(instance), :stop)
-  end
-  
-  
-  # GensServer callbacks
-  
-  
-  def init({:ok, instance}) do
-    {:ok, %XPlane.DRef{instance: instance}}
-  end
-  
-  
-  def handle_cast(:stop, state) do
-    {:stop, :normal, state}
-  end
-  
-  
-  # Helpers
-  
-  
-  defp name(instance) do
-    "#{__MODULE__}_#{instance.addr}"
-  end
-  
-  
-  
 
 end
