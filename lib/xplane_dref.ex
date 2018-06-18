@@ -16,7 +16,7 @@ defmodule XPlane.DRef do
   
   
   def load_compatible_drefs(version_number) do
-    exact = "DataRefs#{version_number}.txt"
+    exact = "DataRefs#{version_number}.txt.gz"
     
     closest = "#{File.cwd!}/datarefs"
     |> File.ls!
@@ -24,7 +24,7 @@ defmodule XPlane.DRef do
     |> Enum.filter(&(&1 <= exact))
     |> Enum.at(0)
     
-    {:ok, file} = File.open("#{File.cwd!}/datarefs/#{closest}", [:read])
+    {:ok, file} = File.open("#{File.cwd!}/datarefs/#{closest}", [:read, :compressed])
     
     for line <- IO.stream(file, :line) do
       IO.inspect (line |> String.split("\t")) # TODO up to here
