@@ -15,7 +15,7 @@ defmodule XPlane.DRef do
   ]
   
   
-  def load_compatible_drefs(version_number) do
+  def load_version(version_number) do
     exact = "DataRefs#{version_number}.txt.gz"
     
     closest = "#{File.cwd!}/datarefs"
@@ -26,10 +26,48 @@ defmodule XPlane.DRef do
     
     {:ok, file} = File.open("#{File.cwd!}/datarefs/#{closest}", [:read, :compressed])
     
-    for line <- IO.stream(file, :line) do
-      IO.inspect (line |> String.split("\t")) # TODO up to here
-    end
+    IO.stream(file, :line)
+    |> Enum.with_index()
+    |> Enum.flat_map(
+      fn({line, code}) ->
+        parse(line |> String.split("\t"), code)
+      end
+    )
   
+  end
+  
+  
+  defp parse([name, type, writable, units, description], code) do
+    [%XPlane.DRef{
+      parse([name, type, writable, units], code) |> Enum.at(0)
+      | description: binary_part(description, 0, byte_size(description) - 1)
+    }]
+  end
+  
+  defp parse([name, type, writable, units], code) do
+    [%XPlane.DRef{
+      parse([name, type, writable], code) |> Enum.at(0)
+      | units: units
+    }]
+  end
+  
+  defp parse([name, type, writable], code) do
+    [%XPlane.DRef{
+      name: name,
+      code: code,
+      type: parse_type(type),
+      writable: (writable == "y")
+    }]
+  end
+  
+  defp parse(_, _) do
+    []
+  end
+  
+  
+  defp parse_type(type) do
+    [type | dims] = type |> String.split(["[", "]"], trim: true)
+    [String.to_atom(type) | dims |> Enum.map(&(String.to_integer(&1)))]
   end
 
 end
