@@ -22,6 +22,17 @@ An X-Plane network interface for Elixir. So far:
   ]
   iex> XPlane.Instance.stop
   :ok
+  iex> XPlane.DRef.load_version(105101) |> Enum.filter(&(&1.code == 200)) 
+  [
+    %XPlane.DRef{
+      code: 200,
+      description: "area each ring of prop",
+      name: "sim/aircraft/prop/acf_ringarea",
+      type: [:float, 8, 10],
+      units: "???",
+      writable: true
+    }
+  ]
 ```
 Currently assumes that X-Plane and Elixir are running on platforms with the same
 endian byte order.
@@ -33,5 +44,6 @@ it's easy to mistype a DREF I'll validate DREFs against the file. With this in
 place users should be able to drive XPlane from their own hardware, write
 autopilots etc.
 
-I need to confirm with X-Plane that it's ok to redistribute the DREF files from
-various X-Plane versions.
+Confirmed with X-Plane that it's ok to redistribute the DREF files:
+
+https://forums.x-plane.org/index.php?/forums/topic/151455-redistributing-datarefs-files/
