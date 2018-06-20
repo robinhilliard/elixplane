@@ -28,7 +28,7 @@ An X-Plane network interface for Elixir. So far:
       code: 200,
       description: "area each ring of prop",
       name: "sim/aircraft/prop/acf_ringarea",
-      type: [:float, 8, 10],
+      type: {:float, [8, 10]},
       units: "???",
       writable: true
     }
