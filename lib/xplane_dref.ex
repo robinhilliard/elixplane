@@ -67,7 +67,7 @@ defmodule XPlane.DRef do
   
   defp parse_type(type) do
     [type | dims] = type |> String.split(["[", "]"], trim: true)
-    [String.to_atom(type) | dims |> Enum.map(&(String.to_integer(&1)))]
+    {String.to_atom(type), if Enum.empty?(dims) do [1] else dims |> Enum.map(&(String.to_integer(&1))) end}
   end
 
 end
