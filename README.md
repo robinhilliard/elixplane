@@ -1,7 +1,13 @@
-eliXPLANE
-======
+![eliXPLANE logo](elixplane.png)
 
-An X-Plane network interface for Elixir. So far:
+An X-Plane network interface for Elixir. So far you can detect instances of X-Plane/
+PlaneMaker running on the local network and load closest available DataRef definitions 
+(included with the library) for a specific X-Plane version.
+
+I'm working on the data module at the moment. This is another GenServer that will
+allow a caller to subscribe to updates at a specified frequency or set writeable DREFs.
+With this in place users should be able to drive X-Plane from their own hardware, write
+autopilots etc.
 
 ```$elixir
   iex> XPlane.Instance.start
@@ -34,16 +40,9 @@ An X-Plane network interface for Elixir. So far:
     }
   ]
 ```
-Currently assumes that X-Plane and Elixir are running on platforms with the same
+* Currently assumes that X-Plane and Elixir are running on platforms with the same
 endian byte order.
 
-I'm working on the DREF module at the moment. This is another GenServer that will
-load DREFs relevant to the XPlane version we're connecting to and allow a caller 
-to subscribe to updates at a specified frequency or set writeable DREFs. Because
-it's easy to mistype a DREF I'll validate DREFs against the file. With this in 
-place users should be able to drive XPlane from their own hardware, write
-autopilots etc.
+* I Confirmed with X-Plane that it's ok to redistribute the DataRef files:
 
-Confirmed with X-Plane that it's ok to redistribute the DREF files:
-
-https://forums.x-plane.org/index.php?/forums/topic/151455-redistributing-datarefs-files/
+  https://forums.x-plane.org/index.php?/forums/topic/151455-redistributing-datarefs-files/
