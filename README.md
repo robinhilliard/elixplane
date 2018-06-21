@@ -1,8 +1,8 @@
 ![eliXPLANE logo](elixplane.png)
 
-An X-Plane network interface for Elixir. So far you can detect instances of X-Plane/
+An X-Plane network client for Elixir [1]. So far you can detect instances of X-Plane/
 PlaneMaker running on the local network and load closest available DataRef definitions 
-(included with the library) for a specific X-Plane version.
+included with the library [2] for a specific X-Plane version.
 
 I'm working on the data module at the moment. This is another GenServer that will
 allow a caller to subscribe to updates at a specified frequency or set writeable DREFs.
@@ -40,9 +40,8 @@ autopilots etc.
     }
   ]
 ```
-* Currently assumes that X-Plane and Elixir are running on platforms with the same
+1. Currently assumes that X-Plane and Elixir are running on platforms with the same
 endian byte order.
 
-* I Confirmed with X-Plane that it's ok to redistribute the DataRef files:
-
-  https://forums.x-plane.org/index.php?/forums/topic/151455-redistributing-datarefs-files/
+2. I Confirmed with X-Plane that it's ok to redistribute the DataRef files:
+https://forums.x-plane.org/index.php?/forums/topic/151455-redistributing-datarefs-files/
