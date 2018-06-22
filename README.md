@@ -43,5 +43,5 @@ autopilots etc.
 1. Currently assumes that X-Plane and Elixir are running on platforms with the same
 endian byte order.
 
-2. I Confirmed with X-Plane that it's ok to redistribute the DataRef files:
+2. I confirmed with X-Plane that it's ok to redistribute the DataRef files:
 https://forums.x-plane.org/index.php?/forums/topic/151455-redistributing-datarefs-files/
