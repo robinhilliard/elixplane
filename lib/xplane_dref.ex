@@ -4,6 +4,7 @@ defmodule XPlane.DRef do
   to load the closest available set of DREFs for a given X-Plane version
   """
   
+  @type xtype :: {:byte | :float | :int | :uint | :short | :ushort, list(integer)}
   
   defstruct [
     name: "",
@@ -13,8 +14,18 @@ defmodule XPlane.DRef do
     units: "???",
     description: "???"
   ]
+  @type t :: %XPlane.DRef{
+               name: String.t, code: integer, type: XPlane.DRef.xtype,
+               writable: boolean, units: String.t, description: String.t}
   
+  @doc """
+  Load the closest list of DataRefs we have available for the specified X-Plane version.
   
+  ## Parameters
+  
+  - version_number: X-Plane version number as returned by `XPlane.Instance.list/0`
+  """
+  @spec load_version(integer) :: list(XPlane.DRef.t)
   def load_version(version_number) do
     exact = "DataRefs#{version_number}.txt.gz"
     
@@ -36,7 +47,7 @@ defmodule XPlane.DRef do
   
   end
   
-  
+  @spec parse(list, integer) :: list(XPlane.DRef.t)
   defp parse([name, type, writable, units, description], code) do
     [%XPlane.DRef{
       parse([name, type, writable, units], code) |> Enum.at(0)
@@ -44,6 +55,7 @@ defmodule XPlane.DRef do
     }]
   end
   
+  @spec parse(list, integer) :: list(XPlane.DRef.t)
   defp parse([name, type, writable, units], code) do
     [%XPlane.DRef{
       parse([name, type, writable], code) |> Enum.at(0)
@@ -51,6 +63,7 @@ defmodule XPlane.DRef do
     }]
   end
   
+  @spec parse(list, integer) :: list(XPlane.DRef.t)
   defp parse([name, type, writable], code) do
     [%XPlane.DRef{
       name: name,
@@ -65,6 +78,7 @@ defmodule XPlane.DRef do
   end
   
   
+  @spec parse_type(String.t) :: XPlane.DRef.xtype
   defp parse_type(type) do
     [type | dims] = type |> String.split(["[", "]"], trim: true)
     {String.to_atom(type), if Enum.empty?(dims) do [1] else dims |> Enum.map(&(String.to_integer(&1))) end}
