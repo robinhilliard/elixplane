@@ -4,7 +4,7 @@ defmodule XPlane.DRef do
   to load the closest available set of DREFs for a given X-Plane version
   """
   
-  @type xtype :: {:byte | :float | :int | :uint | :short | :ushort, list(integer)}
+  @type xtype :: {:byte | :float | :int | :uint | :short | :ushort, list(integer)} | :void
   
   defstruct [
     name: "",
@@ -12,11 +12,15 @@ defmodule XPlane.DRef do
     type: :void,
     writable: false,
     units: "???",
-    description: "???"
-  ]
+    description: "???"]
+  
   @type t :: %XPlane.DRef{
-               name: String.t, code: integer, type: XPlane.DRef.xtype,
-               writable: boolean, units: String.t, description: String.t}
+               name: String.t,
+               code: integer,
+               type: XPlane.DRef.xtype,
+               writable: boolean,
+               units: String.t,
+               description: String.t}
   
   @doc """
   Load the closest list of DataRefs we have available for the specified X-Plane version.

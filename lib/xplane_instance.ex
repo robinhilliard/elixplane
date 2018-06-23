@@ -40,6 +40,18 @@ defmodule XPlane.Instance do
     :computer_name,       # Hostname of the computer
     :seconds_since_seen]  # Time since last beacon multicast received in seconds
 
+  @type t :: %XPlane.Instance{
+              ip: {integer, integer, integer},
+              addr: String.t,
+              major_version: integer,
+              minor_version: integer,
+              version_number: integer,
+              host: :xplane | :planemaker,
+              role: :master | :extern_visual | :ios,
+              port: integer,
+              computer_name: String.t,
+              seconds_since_seen: integer
+             }
 
   @beacon_addr {239, 255, 1, 1}
   @beacon_port 49707
@@ -51,15 +63,33 @@ defmodule XPlane.Instance do
 
 
   # API
+  
 
-
+  @doc """
+  Start GenServer that listens for X-Plane multicast beacon messages and
+  maintains a register of received beacon details. A short delay built in
+  to the function leaves enough time for beacons to be received so that
+  subsequent calls to list return reasonable results.
+  
+  ## Parameters
+  
+  Accepts normal GenServer options apart from name which is set to the
+  module name.
+  """
+  @spec start(list) :: {:ok, pid} | {:error, any} | :ignore
   def start(opts \\ []) do
     result = GenServer.start(__MODULE__, :ok, [name: __MODULE__] ++ opts)
     :timer.sleep(@startup_grace_period) # Allow time for beacons to be picked up
     result
   end
 
-
+  
+  @doc """
+  Return a list of the most recent X-Plane beacon details received from each
+  IP address. Note that a listing does not guarantee that the instance is
+  currently running, only that it was seen `seconds_since_seen` seconds ago.
+  """
+  @spec list() :: list(XPlane.Instance.t)
   def list() do
     now = :erlang.system_time(:second)
     Enum.map(
@@ -85,13 +115,16 @@ defmodule XPlane.Instance do
     
   end
 
-
+  @doc """
+  Stop the GenServer listening for multicast X-Plane beacon messages
+  """
+  @spec stop() :: :ok | {:error, any}
   def stop() do
     GenServer.cast(__MODULE__, :stop)
   end
 
 
-  # GenServer callbacks
+  # GenServer Callbacks
 
 
   def init(:ok) do
