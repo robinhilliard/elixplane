@@ -8,6 +8,7 @@ defmodule XPlane.DRef do
   
   defstruct [
     name: "",
+    id: :unknown,
     code: -1,
     type: :void,
     writable: false,
@@ -16,6 +17,7 @@ defmodule XPlane.DRef do
   
   @type t :: %XPlane.DRef{
                name: String.t,
+               id: atom,
                code: integer,
                type: XPlane.DRef.xtype,
                writable: boolean,
@@ -71,6 +73,9 @@ defmodule XPlane.DRef do
   defp parse([name, type, writable], code) do
     [%XPlane.DRef{
       name: name,
+      id: String.to_atom(name
+                         |> String.slice(4..400)
+                         |> String.replace("/", "_")),
       code: code,
       type: parse_type(type),
       writable: (writable == "y")
