@@ -14,7 +14,6 @@ defmodule XPlane.DRef do
     writable: false,
     units: "???",
     description: "???"]
-  
   @type t :: %XPlane.DRef{
                name: String.t,
                id: atom,
@@ -31,7 +30,7 @@ defmodule XPlane.DRef do
   
   - version_number: X-Plane version number as returned by `XPlane.Instance.list/0`
   """
-  @spec load_version(integer) :: list(XPlane.DRef.t)
+  @spec load_version(integer) :: %{atom: XPlane.DRef.t}
   def load_version(version_number) do
     exact = "DataRefs#{version_number}.txt.gz"
     
@@ -48,8 +47,11 @@ defmodule XPlane.DRef do
     |> Enum.flat_map(
       fn({line, code}) ->
         parse(line |> String.split("\t"), code)
-      end
-    )
+      end)
+    |> Map.new(
+      fn  d = %XPlane.DRef{} ->
+        {d.id, d}
+      end)
   
   end
   
