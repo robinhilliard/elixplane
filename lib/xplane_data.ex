@@ -9,7 +9,7 @@ defmodule XPlane.Data do
               value: binary}
   
   
-  @startup_grace_period 1000
+  @startup_grace_period 2000
   
   
   use GenServer
@@ -50,10 +50,11 @@ defmodule XPlane.Data do
   :ok
   ```
   """
-  @spec request_updates(XPlane.Instance.t, list({atom, integer})) :: :ok | {:error, {:invalid_drefs, list}}
+  @spec request_updates(XPlane.Instance.t, list({atom, integer})) :: :ok | {:error, list}
   def request_updates(instance, dref_id_freq) do
-    GenServer.cast(name(instance), {:request_updates, dref_id_freq})
-    :timer.sleep(@startup_grace_period)  # Allow time for data ref values to be received
+    result = GenServer.call(name(instance), {:request_updates, dref_id_freq})
+    :timer.sleep(@startup_grace_period)  # Allow time for data to be received
+    result
   end
 
   
@@ -89,7 +90,7 @@ defmodule XPlane.Data do
   Stop the GenServer listening for data reference updates, and tell X-Plane to
   stop sending any we are currently subscribed to.
   """
-  @spec stop() :: :ok | {:error, any}
+  @spec stop(XPlane.Instance.t) :: :ok | {:error, any}
   def stop(instance) do
     GenServer.cast(name(instance), :stop)
   end
@@ -98,11 +99,61 @@ defmodule XPlane.Data do
   # GensServer Callbacks
   
   
+  @impl true
   def init({:ok, instance}) do
-    {:ok, XPlane.DRef.load_version(instance.version_number)}
+    {:ok, {XPlane.DRef.load_version(instance.version_number), %{}, instance}}
   end
   
   
+  @impl true
+  def handle_call({:request_updates, dref_id_freq}, _from, state={drefs, _, instance}) do
+    code_freq = for {dref_id, freq} <- dref_id_freq do
+      if drefs |> Map.has_key?(dref_id) do
+        if is_integer(freq) and freq in 0..400 do
+          {:ok, freq, drefs[dref_id].code, drefs[dref_id].name}
+        else
+          {:error, {:freq, dref_id, freq}}
+        end
+      else
+        {:error, {:dref_id, dref_id, freq}}
+      end
+    end
+    
+    errors = code_freq
+             |> Enum.filter(&(match?({:error, _}, &1)))
+    
+    if Enum.empty?(errors) do
+      {:ok, sock} = :gen_udp.open(0, [:binary])
+      for {:ok, freq, code, name} <- code_freq do
+        :ok = :gen_udp.send(
+          sock,
+          instance.ip,
+          instance.port,
+          <<"RREF\0",
+            freq::native-integer-32,
+            code::native-integer-32,
+            name::binary,
+            "\0">>
+        )
+      end
+      :gen_udp.close(sock)
+      {:reply, :ok, state}
+    else
+      {:reply, {:error,
+       for {_, {kind, dref_id, freq}} <- errors do
+         case kind do
+          :freq ->
+            "Invalid frequency #{freq} for data reference #{dref_id}"
+          :dref_id ->
+            "Invalid data reference id: #{Atom.to_string(dref_id)}"
+         end
+       end
+      }, state}
+    end
+  end
+  
+  
+  @impl true
   def handle_cast(:stop, state) do
     {:stop, :normal, state}
   end
@@ -112,7 +163,7 @@ defmodule XPlane.Data do
   
   
   defp name(instance) do
-    "#{__MODULE__}_#{instance.addr}"
+    String.to_atom("#{__MODULE__}_#{instance.addr}")
   end
   
   
@@ -145,9 +196,12 @@ defmodule XPlane.Data do
   # Don't think we want to implement get_and_update() or pop()?
     
 
+  # Enumerable protocol for XPlane.Data struct
   
   
   defimpl Enumerable do
+    
+    
     def count(%XPlane.Data{type: {:_, [dim | _]}, value: _}) do
       {:ok, dim}
     end
@@ -157,8 +211,16 @@ defmodule XPlane.Data do
       {:ok, index in 0..(dim - 1)}
     end
     
+    # TODO alter reduce to work with XPlane.Data
     
-    # TODO reduce see p274
+    def reduce(_,       {:halt, acc}, _fun),   do: {:halted, acc}
+    
+    def reduce(list,    {:suspend, acc}, fun), do: {:suspended, acc, &reduce(list, &1, fun)}
+    
+    def reduce([],      {:cont, acc}, _fun),   do: {:done, acc}
+    
+    def reduce([h | t], {:cont, acc}, fun),    do: reduce(t, fun.(h, acc), fun)
+    
   end
   
 
