@@ -41,7 +41,7 @@ defmodule XPlane.Instance do
     :seconds_since_seen]  # Time since last beacon multicast received in seconds
 
   @type t :: %XPlane.Instance{
-              ip: {integer, integer, integer},
+              ip: {integer, integer, integer, integer},
               addr: String.t,
               major_version: integer,
               minor_version: integer,
