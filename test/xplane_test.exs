@@ -43,7 +43,7 @@ defmodule XPLANETest do
     master |> XPlane.Data.start
     assert :ok =
              master |> XPlane.Data.request_updates(
-                    [flightmodel_position_indicated_airspeed: 1])
+                    [flightmodel_position_indicated_airspeed: 0])
     master |> XPlane.Data.stop
     XPlane.Instance.stop
   end
