@@ -55,6 +55,23 @@ defmodule XPlane.DRef do
   
   end
   
+  
+  def describe(drefs, pattern) do
+    IO.puts("\n")
+    drefs
+    |> Enum.filter(
+      fn {id, _} -> Regex.match?(pattern, Atom.to_string(id)) end)
+    |> Enum.map(
+      fn {id, %XPlane.DRef{description: d, units: u, writable: w}} ->
+        wd = if w do ", writable" else "" end
+        "#{Atom.to_string(id) |> String.pad_trailing(40)} #{d} (#{u}#{wd})"
+      end)
+    |> Enum.join("\n")
+    |> IO.puts
+    IO.puts("\n")
+  end
+  
+  
   @spec parse(list, integer) :: list(XPlane.DRef.t)
   defp parse([name, type, writable, units, description], code) do
     [%XPlane.DRef{
