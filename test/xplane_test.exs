@@ -16,8 +16,8 @@ defmodule XPLANETest do
     XPlane.Instance.start
     [a | _] = XPlane.Instance.list
     a |> XPlane.Data.start
-    assert {:error, ["Invalid data reference id: invalid"]} =
-             a |> XPlane.Data.request_updates([invalid: -1])
+    assert {:error, ["Invalid data reference id: this_is_invalid"]} =
+             a |> XPlane.Data.request_updates([this_is_invalid: -1])
     a |> XPlane.Data.stop
     XPlane.Instance.stop
   end
@@ -36,12 +36,15 @@ defmodule XPLANETest do
   
   test "Valid dref update requested" do
     XPlane.Instance.start
-    [a | _] = XPlane.Instance.list
-    a |> XPlane.Data.start
+    
+    [master] = XPlane.Instance.list
+      |> Enum.filter(&(match?(%XPlane.Instance{role: :master}, &1)))
+    
+    master |> XPlane.Data.start
     assert :ok =
-             a |> XPlane.Data.request_updates(
+             master |> XPlane.Data.request_updates(
                     [flightmodel_position_indicated_airspeed: 1])
-    a |> XPlane.Data.stop
+    master |> XPlane.Data.stop
     XPlane.Instance.stop
   end
 
