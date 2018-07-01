@@ -10,6 +10,7 @@ defmodule XPlane.Data do
   
   
   @startup_grace_period 2000
+  @listen_port 59000
   
   
   use GenServer
@@ -123,7 +124,7 @@ defmodule XPlane.Data do
              |> Enum.filter(&(match?({:error, _}, &1)))
     
     if Enum.empty?(errors) do
-      {:ok, sock} = :gen_udp.open(0, [:binary])
+      {:ok, sock} = :gen_udp.open(@listen_port, [:binary, active: true])
       for {:ok, freq, code, name} <- code_freq do
         :ok = :gen_udp.send(
           sock,
@@ -156,6 +157,19 @@ defmodule XPlane.Data do
   @impl true
   def handle_cast(:stop, state) do
     {:stop, :normal, state}
+  end
+  
+  
+  @impl true
+  def handle_info({:udp, _sock, sender_ip, _sender,
+    <<code::native-integer-32,
+      data::binary>>}, {drefs, values, instance}) do
+      {
+        drefs,
+        values |> Map.put(code, data),
+        instance
+      }
+      IO.inspect(code)
   end
   
   

@@ -143,7 +143,8 @@ defmodule XPlane.Instance do
       multicast_ttl: 4,
       reuseaddr: true] ++
     
-    # BSD variants have to specifically set reuse _port_
+    # In addition to reuseaddr BSD variants have to specifically
+    # set reuseport when listening to beacon only -
     # according to "Sending Data to X-Plane"
     case :os.type() do
       {:unix, os_name} ->
