@@ -77,11 +77,11 @@ defmodule XPlane.Data do
     
   ## Example
   ```
-  iex> latest_updates(master, [:flightmodel_position_indicated_airspeed])
-  %{flightmodel_position_indicated_airspeed: ...}`
+  iex> master |> latest_updates([:flightmodel_position_elevation])
+  %{flightmodel_position_elevation: ...}`
   ```
   """
-  @spec latest_updates(XPlane.Instance.t, list(atom)) :: %{atom: XPlane.Data.t}
+  @spec latest_updates(XPlane.Instance.t, list(atom)) :: %{atom: float | nil}
   def latest_updates(instance, dref_id_list) do
     GenServer.call(name(instance), {:latest_updates, dref_id_list})
   end
@@ -102,12 +102,13 @@ defmodule XPlane.Data do
   
   @impl true
   def init({:ok, instance}) do
-    {:ok, {XPlane.DRef.load_version(instance.version_number), %{}, instance}}
+    {:ok, sock} = :gen_udp.open(@listen_port, [:binary, active: true])
+    {:ok, {XPlane.DRef.load_version(instance.version_number), %{}, instance, sock}}
   end
   
   
   @impl true
-  def handle_call({:request_updates, dref_id_freq}, _from, state={drefs, _, instance}) do
+  def handle_call({:request_updates, dref_id_freq}, _from, state={drefs, _, instance, sock}) do
     code_freq = for {dref_id, freq} <- dref_id_freq do
       if drefs |> Map.has_key?(dref_id) do
         if is_integer(freq) and freq in 0..400 do
@@ -120,12 +121,11 @@ defmodule XPlane.Data do
       end
     end
     
-    errors = code_freq
-             |> Enum.filter(&(match?({:error, _}, &1)))
+    errors = code_freq |> Enum.filter(&(match?({:error, _}, &1)))
     
     if Enum.empty?(errors) do
-      {:ok, sock} = :gen_udp.open(@listen_port, [:binary, active: true])
       for {:ok, freq, code, name} <- code_freq do
+        padded_name = pad_with_trailing_zeros(name, 400)
         :ok = :gen_udp.send(
           sock,
           instance.ip,
@@ -133,12 +133,11 @@ defmodule XPlane.Data do
           <<"RREF\0",
             freq::native-integer-32,
             code::native-integer-32,
-            name::binary,
-            "\0">>
+            padded_name::binary>>
         )
       end
-      :gen_udp.close(sock)
       {:reply, :ok, state}
+      
     else
       {:reply, {:error,
        for {_, {kind, dref_id, freq}} <- errors do
@@ -153,27 +152,57 @@ defmodule XPlane.Data do
     end
   end
   
+  def handle_call({:latest_updates, dref_ids}, _from, state={drefs, code_data, instance, sock}) do
+    
+    data = for dref_id <- dref_ids do
+      {dref_id, code_data |> Map.get(drefs[dref_id].code, nil)}
+    end |> Map.new
+    {:reply, data, state}
+  end
+  
   
   @impl true
-  def handle_cast(:stop, state) do
+  def handle_cast(:stop, state={_, _, _, sock}) do
+    # TODO send zero frequencies to X-Plane
+    sock |> :gen_udp.close
     {:stop, :normal, state}
   end
   
   
   @impl true
-  def handle_info({:udp, _sock, sender_ip, _sender,
-    <<code::native-integer-32,
-      data::binary>>}, {drefs, values, instance}) do
-      {
-        drefs,
-        values |> Map.put(code, data),
-        instance
+  def handle_info({:udp, _sock, _ip, _port,
+    <<"RREF",
+      #  "O" for X-Plane 10
+      #  "," for X-Plane 11
+      #  neither match documentation...
+      _::size(8),
+      tail::binary>>},
+    {drefs, code_data, instance, sock}) do
+      {:noreply,
+        {
+          drefs,
+          unpack_xdata(code_data, tail),
+          instance,
+          sock
+        }
       }
-      IO.inspect(code)
+  end
+  
+  def handle_info(msg, state) do
+    IO.inspect({:unexpected_msg, msg})
+    {:noreply, state}
   end
   
   
   # Helpers
+  
+  defp unpack_xdata(code_data, <<>>) do
+    code_data
+  end
+
+  defp unpack_xdata(code_data, <<code::native-integer-32, data::native-float-32, tail::binary>>) do
+    unpack_xdata(code_data |> Map.put(code, data), tail)
+  end
   
   
   defp name(instance) do
@@ -181,61 +210,9 @@ defmodule XPlane.Data do
   end
   
   
-  # Access behaviour for XPlane.Data struct
-  
-  @behaviour Access
-
-  def fetch(%XPlane.Data{type: {:int, [dim]}, value: value}, index)
-    when index in 0..(dim - 1) do
-    {:ok, 0} # TODO decode int
+  defp pad_with_trailing_zeros(bin, len) do
+    pad_len = 8 * (len - byte_size(bin))
+    <<bin::binary, 0::size(pad_len)>>
   end
-  
-  # TODO other xtypes
-  
-  def fetch(%XPlane.Data{type: {xtype, [dim | inner_dims]}, value: value}, index)
-    when index in 0..(dim - 1) do
-  {:ok, %XPlane.Data{type: {xtype, [inner_dims]}, value: value}} # TODO munge value
-  end
-  
-  
-  def get(data=%XPlane.Data{type: {_, [dim | _]}, value: _}, index, _)
-    when index in 0..(dim - 1) do
-    fetch(data, index)
-  end
-    
-  def get(_, _, default) do
-    default
-  end
-  
-  # Don't think we want to implement get_and_update() or pop()?
-    
-
-  # Enumerable protocol for XPlane.Data struct
-  
-  
-  defimpl Enumerable do
-    
-    
-    def count(%XPlane.Data{type: {:_, [dim | _]}, value: _}) do
-      {:ok, dim}
-    end
-    
-    
-    def member?(%XPlane.Data{type: {:_, [dim | _]}, value: _}, index) do
-      {:ok, index in 0..(dim - 1)}
-    end
-    
-    # TODO alter reduce to work with XPlane.Data
-    
-    def reduce(_,       {:halt, acc}, _fun),   do: {:halted, acc}
-    
-    def reduce(list,    {:suspend, acc}, fun), do: {:suspended, acc, &reduce(list, &1, fun)}
-    
-    def reduce([],      {:cont, acc}, _fun),   do: {:done, acc}
-    
-    def reduce([h | t], {:cont, acc}, fun),    do: reduce(t, fun.(h, acc), fun)
-    
-  end
-  
 
 end

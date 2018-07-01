@@ -144,8 +144,8 @@ defmodule XPlane.Instance do
       reuseaddr: true] ++
     
     # In addition to reuseaddr BSD variants have to specifically
-    # set reuseport when listening to beacon only -
-    # according to "Sending Data to X-Plane"
+    # set reuseport (only) when listening to beacon according
+    # to "Sending Data to X-Plane"
     case :os.type() do
       {:unix, os_name} ->
         cond do
