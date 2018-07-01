@@ -57,6 +57,8 @@ defmodule XPlane.Instance do
   @beacon_port 49707
   @zeros_addr {0, 0, 0, 0}
   @startup_grace_period 1000
+  @sol_socket 0xffff
+  @so_reuseport 0x0200
 
 
   use GenServer
@@ -88,6 +90,10 @@ defmodule XPlane.Instance do
   Return a list of the most recent X-Plane beacon details received from each
   IP address. Note that a listing does not guarantee that the instance is
   currently running, only that it was seen `seconds_since_seen` seconds ago.
+  
+  Reuseport code based on:
+  
+  https://github.com/refuge/rbeacon/blob/master/src/rbeacon.erl#L414-L425
   """
   @spec list() :: list(XPlane.Instance.t)
   def list() do
@@ -135,8 +141,21 @@ defmodule XPlane.Instance do
       multicast_if: @zeros_addr,
       multicast_loop: false,
       multicast_ttl: 4,
-      reuseaddr: true
-    ]
+      reuseaddr: true] ++
+    
+    # BSD variants have to specifically set reuse _port_ according to
+    # according to "Sending Data to X-Plane"
+    case :os.type() do
+      {:unix, os_name} ->
+        cond do
+          os_name in [:darwin, :freebsd, :openbsd, :netbsd] ->
+            [{:raw, @sol_socket, @so_reuseport, <<1::native-32>>}]
+          true ->
+            []
+        end
+      _ ->
+        []
+    end
 
     {:ok, _sock} = :gen_udp.open(@beacon_port, udp_options)
 
