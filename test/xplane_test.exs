@@ -9,8 +9,9 @@ defmodule XPLANETest do
     XPlane.Instance.stop
   end
   
-  test "load compatible drefs doesn't crash" do
-    XPlane.DRef.load_version(105000)
+  test "load compatible drefs" do
+    drefs = XPlane.DRef.load_version(105000)
+    drefs |> XPlane.DRef.describe(~r/flightmodel_position_l/)
   end
   
   test "Invalid dref update requested returns error" do
