@@ -53,9 +53,13 @@ defmodule XPlane.Data do
   """
   @spec request_updates(XPlane.Instance.t, list({atom, integer})) :: :ok | {:error, list}
   def request_updates(instance, dref_id_freq) do
-    result = GenServer.call(name(instance), {:request_updates, dref_id_freq})
-    :timer.sleep(@startup_grace_period)  # Allow time for data to be received
-    result
+    case GenServer.call(name(instance), {:request_updates, dref_id_freq}) do
+      e = {:error, _} ->
+        e
+      r ->
+        :timer.sleep(@startup_grace_period)  # Allow time for data to be received
+        r
+    end
   end
 
   
@@ -155,7 +159,7 @@ defmodule XPlane.Data do
   def handle_call({:latest_updates, dref_ids}, _from, state={drefs, code_data, instance, sock}) do
     
     data = for dref_id <- dref_ids do
-      {dref_id, code_data |> Map.get(drefs[dref_id].code, nil)}
+      {dref_id, if Map.has_key?(drefs, dref_id) do  code_data |> Map.get(drefs[dref_id].code, nil) else nil end}
     end |> Map.new
     {:reply, data, state}
   end
