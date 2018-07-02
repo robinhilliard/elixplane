@@ -72,6 +72,16 @@ defmodule XPlane.DRef do
   end
   
   
+  def withCode(drefs, code_to_match) do
+    [{_, matching_dref} | tail] =
+      Enum.filter(drefs,
+        fn {_, %XPlane.DRef{code: code}} ->
+          code == code_to_match
+        end)
+    matching_dref
+  end
+  
+  
   @spec parse(list, integer) :: list(XPlane.DRef.t)
   defp parse([name, type, writable, units, description], code) do
     [%XPlane.DRef{
