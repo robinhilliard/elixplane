@@ -159,17 +159,37 @@ defmodule XPlane.Data do
   def handle_call({:latest_updates, dref_ids}, _from, state={drefs, code_data, instance, sock}) do
     
     data = for dref_id <- dref_ids do
-      {dref_id, if Map.has_key?(drefs, dref_id) do  code_data |> Map.get(drefs[dref_id].code, nil) else nil end}
+      {
+        dref_id,
+        if Map.has_key?(drefs, dref_id) do
+          code_data |> Map.get(drefs[dref_id].code, nil)
+        else
+          nil
+        end
+      }
     end |> Map.new
     {:reply, data, state}
   end
   
   
   @impl true
-  def handle_cast(:stop, state={_, _, _, sock}) do
-    # TODO send zero frequencies to X-Plane
-    sock |> :gen_udp.close
-    {:stop, :normal, state}
+  def handle_cast(:stop, state={drefs, code_data, instance, sock}) do
+    # Cancel updates from X-Plane by setting frequency to 0
+    for code <- Map.keys(code_data) do
+      %XPlane.DRef{name: name} = drefs |> XPlane.DRef.withCode(code)
+      padded_name = pad_with_trailing_zeros(name, 400)
+      :ok = :gen_udp.send(
+        sock,
+        instance.ip,
+        instance.port,
+        <<"RREF\0",
+          0::native-integer-32,
+          code::native-integer-32,
+          padded_name::binary>>
+        )
+    end
+    :gen_udp.close(sock)
+    {:stop, :normal, nil}
   end
   
   
