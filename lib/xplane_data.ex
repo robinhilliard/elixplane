@@ -5,7 +5,7 @@ defmodule XPlane.Data do
   
   defstruct [:type, :value]
   @type t :: %XPlane.Data{
-              type: XPlane.DRef.xtype,
+              type: XPlane.DataRef.xtype,
               value: binary}
   
   
@@ -42,7 +42,7 @@ defmodule XPlane.Data do
   
   ## Parameters
   - instance: X-Plane instance from list returned by `XPlane.Instance.list/0`
-  - dref_id_freq: Keyword list of data reference ids and integer updates
+  - data_ref_id_freq: Keyword list of data reference ids and integer updates
     per second
     
   ## Example
@@ -52,8 +52,8 @@ defmodule XPlane.Data do
   ```
   """
   @spec request_updates(XPlane.Instance.t, list({atom, integer})) :: :ok | {:error, list}
-  def request_updates(instance, dref_id_freq) do
-    case GenServer.call(name(instance), {:request_updates, dref_id_freq}) do
+  def request_updates(instance, data_ref_id_freq) do
+    case GenServer.call(name(instance), {:request_updates, data_ref_id_freq}) do
       e = {:error, _} ->
         e
       r ->
@@ -77,7 +77,7 @@ defmodule XPlane.Data do
   
   ## Parameters
   - instance: X-Plane instance from list returned by `XPlane.Instance.list/0`
-  - dref_ids:  List of data reference ids to return values for
+  - data_ref_ids:  List of data reference ids to return values for
     
   ## Example
   ```
@@ -86,8 +86,8 @@ defmodule XPlane.Data do
   ```
   """
   @spec latest_updates(XPlane.Instance.t, list(atom)) :: %{atom: float | nil}
-  def latest_updates(instance, dref_id_list) do
-    GenServer.call(name(instance), {:latest_updates, dref_id_list})
+  def latest_updates(instance, data_ref_id_list) do
+    GenServer.call(name(instance), {:latest_updates, data_ref_id_list})
   end
   
   
@@ -107,21 +107,21 @@ defmodule XPlane.Data do
   @impl true
   def init({:ok, instance}) do
     {:ok, sock} = :gen_udp.open(@listen_port, [:binary, active: true])
-    {:ok, {XPlane.DRef.load_version(instance.version_number), %{}, instance, sock}}
+    {:ok, {XPlane.DataRef.load_version(instance.version_number), %{}, instance, sock}}
   end
   
   
   @impl true
-  def handle_call({:request_updates, dref_id_freq}, _from, state={drefs, _, instance, sock}) do
-    code_freq = for {dref_id, freq} <- dref_id_freq do
-      if drefs |> Map.has_key?(dref_id) do
+  def handle_call({:request_updates, data_ref_id_freq}, _from, state={data_refs, _, instance, sock}) do
+    code_freq = for {data_ref_id, freq} <- data_ref_id_freq do
+      if data_refs |> Map.has_key?(data_ref_id) do
         if is_integer(freq) and freq in 0..400 do
-          {:ok, freq, drefs[dref_id].code, drefs[dref_id].name}
+          {:ok, freq, data_refs[data_ref_id].code, data_refs[data_ref_id].name}
         else
-          {:error, {:freq, dref_id, freq}}
+          {:error, {:freq, data_ref_id, freq}}
         end
       else
-        {:error, {:dref_id, dref_id, freq}}
+        {:error, {:DataRef_id, data_ref_id, freq}}
       end
     end
     
@@ -144,25 +144,25 @@ defmodule XPlane.Data do
       
     else
       {:reply, {:error,
-       for {_, {kind, dref_id, freq}} <- errors do
+       for {_, {kind, data_ref_id, freq}} <- errors do
          case kind do
           :freq ->
-            "Invalid frequency #{freq} for data reference #{dref_id}"
-          :dref_id ->
-            "Invalid data reference id: #{Atom.to_string(dref_id)}"
+            "Invalid frequency #{freq} for data reference #{data_ref_id}"
+          :DataRef_id ->
+            "Invalid data reference id: #{Atom.to_string(data_ref_id)}"
          end
        end
       }, state}
     end
   end
   
-  def handle_call({:latest_updates, dref_ids}, _from, state={drefs, code_data, instance, sock}) do
+  def handle_call({:latest_updates, data_ref_ids}, _from, state={data_refs, code_data, instance, sock}) do
     
-    data = for dref_id <- dref_ids do
+    data = for data_ref_id <- data_ref_ids do
       {
-        dref_id,
-        if Map.has_key?(drefs, dref_id) do
-          code_data |> Map.get(drefs[dref_id].code, nil)
+        data_ref_id,
+        if Map.has_key?(data_refs, data_ref_id) do
+          code_data |> Map.get(data_refs[data_ref_id].code, nil)
         else
           nil
         end
@@ -173,10 +173,10 @@ defmodule XPlane.Data do
   
   
   @impl true
-  def handle_cast(:stop, state={drefs, code_data, instance, sock}) do
+  def handle_cast(:stop, state={data_refs, code_data, instance, sock}) do
     # Cancel updates from X-Plane by setting frequency to 0
     for code <- Map.keys(code_data) do
-      %XPlane.DRef{name: name} = drefs |> XPlane.DRef.withCode(code)
+      %XPlane.DataRef{name: name} = data_refs |> XPlane.DataRef.withCode(code)
       padded_name = pad_with_trailing_zeros(name, 400)
       :ok = :gen_udp.send(
         sock,
@@ -201,10 +201,10 @@ defmodule XPlane.Data do
       #  neither match documentation...
       _::size(8),
       tail::binary>>},
-    {drefs, code_data, instance, sock}) do
+    {data_refs, code_data, instance, sock}) do
       {:noreply,
         {
-          drefs,
+          data_refs,
           unpack_xdata(code_data, tail),
           instance,
           sock
@@ -224,7 +224,10 @@ defmodule XPlane.Data do
     code_data
   end
 
-  defp unpack_xdata(code_data, <<code::native-integer-32, data::native-float-32, tail::binary>>) do
+  defp unpack_xdata(code_data,
+         <<code::native-integer-32,
+           data::native-float-32,
+           tail::binary>>) do
     unpack_xdata(code_data |> Map.put(code, data), tail)
   end
   
