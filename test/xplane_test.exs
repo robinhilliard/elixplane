@@ -9,12 +9,17 @@ defmodule XPLANETest do
     XPlane.Instance.stop
   end
   
-  test "load compatible drefs" do
-    drefs = XPlane.DRef.load_version(105000)
-    drefs |> XPlane.DRef.describe(~r/flightmodel_position_l/)
+  test "load compatible DataRefs" do
+    data_refs = XPlane.DataRef.load_version(105000)
+    data_refs |> XPlane.DataRef.describe(~r/flightmodel_position_l/)
   end
   
-  test "Invalid dref update requested returns error" do
+  test "load compatible CmdRefs" do
+    cmd_refs = XPlane.CmdRef.load_version(105000)
+    cmd_refs |> XPlane.CmdRef.describe(~r/throttle/)
+  end
+  
+  test "Invalid DataRef update requested returns error" do
     XPlane.Instance.start
     [a | _] = XPlane.Instance.list
     a |> XPlane.Data.start
@@ -24,7 +29,7 @@ defmodule XPLANETest do
     XPlane.Instance.stop
   end
   
-  test "Invalid dref update rate requested returns error" do
+  test "Invalid DataRef update rate requested returns error" do
     XPlane.Instance.start
     [a | _] = XPlane.Instance.list
     a |> XPlane.Data.start
@@ -36,7 +41,7 @@ defmodule XPLANETest do
     XPlane.Instance.stop
   end
   
-  test "Valid dref with no updates requested" do
+  test "Valid DataRef with no updates requested" do
     XPlane.Instance.start
     
     [master] = XPlane.Instance.list
@@ -50,7 +55,7 @@ defmodule XPLANETest do
     XPlane.Instance.stop
   end
   
-  test "Valid dref with updates requested" do
+  test "Valid DataRef with updates requested" do
     XPlane.Instance.start
     
     [master] = XPlane.Instance.list
