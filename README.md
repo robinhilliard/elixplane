@@ -7,9 +7,9 @@ An X-Plane network client for Elixir [1]. So far you can
   for a specific X-Plane version.
 - Request a list of DataRefs to be sent to you at specified frequencies
 
-I'm continuing to work on the data module at the moment so that we can set writeable DREFs.
-With this in place users should be able to drive X-Plane from their own hardware, write
-autopilots etc.
+I'm continuing to work on the data and command modules at the moment so that we can set 
+writeable Data Refs or send commands to X-Plane. With this in place users should be able
+to drive X-Plane from their own hardware, write autopilots etc.
 
 ```$elixir
   iex> XPlane.Instance.start
@@ -29,9 +29,9 @@ autopilots etc.
       version_number: 105101
     }
   ]
-  iex> drefs = XPlane.DRef.load_version(105000)
+  iex> drefs = XPlane.DataRef.load_version(105000)
   ...
-  iex> drefs |> XPlane.DRef.describe(~r/flightmodel_position_l/)
+  iex> drefs |> XPlane.DataRef.describe(~r/flightmodel_position_l/)
   
   flightmodel_position_local_ax            The acceleration in local OGL coordinates (mtr/sec2, writable)
   flightmodel_position_latitude            The latitude of the aircraft (degrees)
@@ -42,6 +42,14 @@ autopilots etc.
 
 
   :ok
+  iex> crefs = XPlane.CmdRef.load_version(105000)
+  ...
+  iex> crefs |> XPlane.CmdRef.describe(~r/throttle/)
+  autopilot_autothrottle_off               Autopilot auto-throttle off.
+  autopilot_autothrottle_on                Autopilot auto-throttle on.
+  autopilot_autothrottle_toggle            Autopilot auto-throttle toggle.
+  engines_throttle_down                    Throttle down a bit.
+  ...
   iex> XPlane.Data.start(xp)
   {:ok, #PID<0.157.0>} 
   iex> XPlane.Data.request_updates(xp, [
