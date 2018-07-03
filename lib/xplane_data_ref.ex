@@ -34,13 +34,13 @@ defmodule XPlane.DataRef do
   def load_version(version_number) do
     exact = "DataRefs#{version_number}.txt.gz"
     
-    closest = "#{File.cwd!}/datarefs"
+    closest = "#{:code.priv_dir(:xplane)}/datarefs"
     |> File.ls!
     |> Enum.reverse
     |> Enum.filter(&(&1 <= exact))
     |> Enum.at(0)
     
-    {:ok, file} = File.open("#{File.cwd!}/datarefs/#{closest}", [:read, :compressed])
+    {:ok, file} = File.open("#{:code.priv_dir(:xplane)}/datarefs/#{closest}", [:read, :compressed])
     
     IO.stream(file, :line)
     |> Enum.with_index()
@@ -74,7 +74,7 @@ defmodule XPlane.DataRef do
   
   
   def withCode(data_refs, code_to_match) do
-    [{_, matching_data_ref} | tail] =
+    [{_, matching_data_ref} | _] =
       Enum.filter(data_refs,
         fn {_, %XPlane.DataRef{code: code}} ->
           code == code_to_match

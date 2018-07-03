@@ -3,7 +3,7 @@ defmodule XPLANE.Mixfile do
 
   def project do
     [app: :xplane,
-     version: "0.2.0",
+     version: "0.2.1",
      deps_path: "../deps",
      lockfile: "../mix.lock",
      elixir: "~> 1.0",
@@ -33,7 +33,7 @@ defmodule XPLANE.Mixfile do
   defp package() do
     [
       name: "elixplane",
-      files: ["datarefs", "commands", "lib", "mix.exs", "README.md", "LICENSE"],
+      files: ["priv", "lib", "mix.exs", "README.md", "LICENSE"],
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/robinhilliard/elixplane"},
       maintainers: ["Robin Hilliard"]

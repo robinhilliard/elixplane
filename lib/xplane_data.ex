@@ -156,8 +156,7 @@ defmodule XPlane.Data do
     end
   end
   
-  def handle_call({:latest_updates, data_ref_ids}, _from, state={data_refs, code_data, instance, sock}) do
-    
+  def handle_call({:latest_updates, data_ref_ids}, _from, state={data_refs, code_data, _, _}) do
     data = for data_ref_id <- data_ref_ids do
       {
         data_ref_id,
@@ -173,7 +172,7 @@ defmodule XPlane.Data do
   
   
   @impl true
-  def handle_cast(:stop, state={data_refs, code_data, instance, sock}) do
+  def handle_cast(:stop, {data_refs, code_data, instance, sock}) do
     # Cancel updates from X-Plane by setting frequency to 0
     for code <- Map.keys(code_data) do
       %XPlane.DataRef{name: name} = data_refs |> XPlane.DataRef.withCode(code)

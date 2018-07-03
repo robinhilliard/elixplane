@@ -26,13 +26,13 @@ defmodule XPlane.CmdRef do
   def load_version(version_number) do
     exact = "Commands#{version_number}.txt.gz"
     
-    closest = "#{File.cwd!}/commands"
+    closest = "#{:code.priv_dir(:xplane)}/commands"
     |> File.ls!
     |> Enum.reverse
     |> Enum.filter(&(&1 <= exact))
     |> Enum.at(0)
     
-    {:ok, file} = File.open("#{File.cwd!}/commands/#{closest}", [:read, :compressed])
+    {:ok, file} = File.open("#{:code.priv_dir(:xplane)}/commands/#{closest}", [:read, :compressed])
     
     IO.stream(file, :line)
     |> Enum.map(
