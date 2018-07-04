@@ -16,7 +16,7 @@ defmodule XPLANETest do
   
   test "load compatible CmdRefs" do
     cmd_refs = XPlane.CmdRef.load_version(105000)
-    cmd_refs |> XPlane.CmdRef.describe(~r/throttle/)
+    cmd_refs |> XPlane.CmdRef.describe(~r/lights/)
   end
   
   test "Invalid DataRef update requested returns error" do
