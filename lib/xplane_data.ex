@@ -190,7 +190,6 @@ defmodule XPlane.Data do
   
   def handle_call({:set, data_ref_values}, _from, state={data_refs, _, instance, sock}) do
     name_values = for {data_ref_id, value} <- data_ref_values do
-      # TODO Check writable
       if data_refs |> Map.has_key?(data_ref_id) do
         if data_refs[data_ref_id].writable do
           if is_float(value) do
