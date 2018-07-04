@@ -3,13 +3,10 @@
 An X-Plane network client for Elixir [1]. So far you can
 
 - Detect instances of X-Plane/ PlaneMaker running on the local network
-- Load the closest available DataRef definitions included with the library [2] 
-  for a specific X-Plane version.
+- Load the closest available DataRef and Command definitions (included with the library [2]) for a specific X-Plane version.
 - Request a list of DataRefs to be sent to you at specified frequencies
-
-I'm continuing to work on the data and command modules at the moment so that we can set 
-writeable Data Refs or send commands to X-Plane. With this in place users should be able
-to drive X-Plane from their own hardware, write autopilots etc.
+- Write to a writable DataRef
+- Send a command to X-Plane
 
 ```$elixir
   iex> XPlane.Instance.start
@@ -44,12 +41,16 @@ to drive X-Plane from their own hardware, write autopilots etc.
   :ok
   iex> crefs = XPlane.CmdRef.load_version(105000)
   ...
-  iex> crefs |> XPlane.CmdRef.describe(~r/throttle/)
-  autopilot_autothrottle_off               Autopilot auto-throttle off.
-  autopilot_autothrottle_on                Autopilot auto-throttle on.
-  autopilot_autothrottle_toggle            Autopilot auto-throttle toggle.
-  engines_throttle_down                    Throttle down a bit.
+  iex> crefs |> XPlane.CmdRef.describe(~r/lights/)
+  lights_beacon_lights_off                 Beacon lights off.
+  lights_beacon_lights_on                  Beacon lights on.
+  lights_beacon_lights_toggle              Beacon lights toggle.
+  lights_landing_lights_off                Landing lights off.
+  lights_landing_lights_on                 Landing lights on.
+  lights_landing_lights_toggle             Landing lights toggle.
   ...
+  iex> XPlane.Cmd.send(xp, [:lights_landing_lights_toggle])
+  :ok
   iex> XPlane.Data.start(xp)
   {:ok, #PID<0.157.0>} 
   iex> XPlane.Data.request_updates(xp, [
@@ -66,6 +67,8 @@ to drive X-Plane from their own hardware, write autopilots etc.
     flightmodel_position_latitude: -31.069093704223633,
     flightmodel_position_longitude: 152.76556396484375
   }
+  iex> XPlane.Data.set(xp, [flightmodel_position_local_y: 6000.0])
+  :ok
   iex> XPlane.Data.stop(xp)
   :ok
   iex> XPlane.Instance.stop
@@ -74,5 +77,5 @@ to drive X-Plane from their own hardware, write autopilots etc.
 1. Currently assumes that X-Plane and Elixir are running on platforms with the same
 endian byte order.
 
-2. I confirmed with X-Plane that it's ok to redistribute the DataRef files:
+2. I confirmed with X-Plane that it's ok to redistribute the DataRef and Command files:
 https://forums.x-plane.org/index.php?/forums/topic/151455-redistributing-datarefs-files/
