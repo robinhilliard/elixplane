@@ -87,6 +87,29 @@ defmodule XPlane.Data do
   
   
   @doc """
+  Set one or more writable data reference values.
+  
+  ## Parameters
+  - instance: X-Plane instance from list returned by `XPlane.Instance.list/0`
+  - data_ref_id_values: Keyword list of data reference ids and floating point
+    new values to set
+    
+  ## Example
+  ```
+  iex> XPlane.Data.set(master, [flightmodel_position_elevation: 1000])
+  :ok
+  ```
+  """
+  @spec set(XPlane.Instance.t, list({atom, float})) :: :ok | {:error, list}
+  def set(instance, data_ref_id_values) do
+    case GenServer.call(name(instance), {:set, data_ref_id_values}) do
+      e = {:error, _} -> e
+      r -> r
+    end
+  end
+  
+  
+  @doc """
   Stop the GenServer listening for data reference updates, and tell X-Plane to
   stop sending any we are currently subscribed to.
   """
@@ -139,8 +162,8 @@ defmodule XPlane.Data do
       
     else
       {:reply, {:error,
-       for {_, {kind, data_ref_id, freq}} <- errors do
-         case kind do
+       for {_, {type, data_ref_id, freq}} <- errors do
+         case type do
           :freq ->
             "Invalid frequency #{freq} for data reference #{data_ref_id}"
           :data_ref_id ->
@@ -163,6 +186,56 @@ defmodule XPlane.Data do
       }
     end |> Map.new
     {:reply, data, state}
+  end
+  
+  def handle_call({:set, data_ref_values}, _from, state={data_refs, _, instance, sock}) do
+    name_values = for {data_ref_id, value} <- data_ref_values do
+      # TODO Check writable
+      if data_refs |> Map.has_key?(data_ref_id) do
+        if data_refs[data_ref_id].writable do
+          if is_float(value) do
+            {:ok, data_refs[data_ref_id].name, value}
+          else
+            {:error, {:invalid_value, {data_ref_id, value}}}
+          end
+        else
+          {:error, {:not_writable, data_ref_id}}
+        end
+      else
+        {:error, {:invalid_id, data_ref_id}}
+      end
+    end
+    
+    errors = name_values |> Enum.filter(&(match?({:error, _}, &1)))
+    
+    if Enum.empty?(errors) do
+      for {:ok, name, value} <- name_values do
+        padded_name = pad_with_trailing_zeros(name, 500)
+        :ok = :gen_udp.send(
+          sock,
+          instance.ip,
+          instance.port,
+          <<"DREF\0",
+            value::native-float-32,
+            padded_name::binary>>
+        )
+      end
+      {:reply, :ok, state}
+    else
+      {:reply, {:error,
+        for {_, {type, detail}} <- errors do
+          case type do
+            :invalid_value ->
+              {data_ref_id, value} = detail
+              "Invalid value #{value} for data reference #{data_ref_id}"
+            :invalid_id ->
+              "Invalid data reference id: #{detail}"
+            :not_writable ->
+              "Data reference id #{detail} is not writable"
+          end
+        end
+      }, state}
+    end
   end
   
   
