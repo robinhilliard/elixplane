@@ -11,7 +11,7 @@ defmodule XPLANETest do
   
   test "load compatible DataRefs" do
     data_refs = XPlane.DataRef.load_version(105000)
-    data_refs |> XPlane.DataRef.describe(~r/flightmodel_position_l/)
+    data_refs |> XPlane.DataRef.describe(~r/flightmodel_position_/)
   end
   
   test "load compatible CmdRefs" do
@@ -109,6 +109,7 @@ defmodule XPLANETest do
     XPlane.Cmd.start(master)
     master |> XPlane.Cmd.send([:lights_landing_lights_toggle])
     XPlane.Cmd.stop(master)
+    XPlane.Instance.stop
   end
   
   test "Invalid Command" do
@@ -125,6 +126,48 @@ defmodule XPLANETest do
              master |> XPlane.Cmd.send([:lights_camera_action_wiggles])
              
     XPlane.Cmd.stop(master)
+    XPlane.Instance.stop
+  end
+  
+  test "Valid data set" do
+     XPlane.Instance.start
+    
+    [master] = XPlane.Instance.list
+    |> Enum.filter(&(match?(%XPlane.Instance{role: :master}, &1)))
+    
+    master |> XPlane.Data.start
+    master |> XPlane.Data.set([flightmodel_position_local_y: 6000.0])
+    master |> XPlane.Data.stop
+    XPlane.Instance.stop
+  end
+  
+  test "Attempt to set unwritable data reference" do
+     XPlane.Instance.start
+    
+    [master] = XPlane.Instance.list
+    |> Enum.filter(&(match?(%XPlane.Instance{role: :master}, &1)))
+    
+    master |> XPlane.Data.start
+    assert {:error,
+             ["Data reference id flightmodel_position_elevation is not writable"]} =
+      master |> XPlane.Data.set([flightmodel_position_elevation: 6000.0])
+    master |> XPlane.Data.stop
+    XPlane.Instance.stop
+  end
+  
+  test "Invalid data set" do
+    XPlane.Instance.start
+    
+    [master] = XPlane.Instance.list
+    |> Enum.filter(&(match?(%XPlane.Instance{role: :master}, &1)))
+    
+    master |> XPlane.Data.start
+    
+    
+    assert {:error, ["Invalid data reference id: lights_camera_action_wiggles"]} =
+             master |> XPlane.Data.set([lights_camera_action_wiggles: 10.0])
+             
+    XPlane.Instance.stop
   end
 
 end
