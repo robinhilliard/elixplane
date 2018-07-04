@@ -56,7 +56,7 @@ defmodule XPlane.Instance do
   @beacon_addr {239, 255, 1, 1}
   @beacon_port 49707
   @zeros_addr {0, 0, 0, 0}
-  @startup_grace_period 1100
+  @startup_grace_period 2500
   @sol_socket 0xffff
   @so_reuseport 0x0200
 
