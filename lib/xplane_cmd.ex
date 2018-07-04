@@ -95,8 +95,8 @@ defmodule XPlane.Cmd do
       
     else
       {:reply, {:error,
-       for invalid_cmd_id <- errors do
-         "Invalid command id #{Atom.to_string(invalid_cmd_id)}"
+       for {:error, invalid_cmd_id} <- errors do
+         "Invalid command id: #{Atom.to_string(invalid_cmd_id)}"
        end
       }, state}
     end
