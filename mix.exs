@@ -3,7 +3,7 @@ defmodule XPLANE.Mixfile do
 
   def project do
     [app: :xplane,
-     version: "0.3.0",
+     version: "0.4.0",
      deps_path: "../deps",
      lockfile: "../mix.lock",
      elixir: "~> 1.0",
