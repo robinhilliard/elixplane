@@ -97,5 +97,34 @@ defmodule XPLANETest do
     
     XPlane.Instance.stop
   end
+  
+  test "Valid Command" do
+    XPlane.Instance.start
+    
+    [master] = XPlane.Instance.list
+    |> Enum.filter(&(match?(%XPlane.Instance{role: :master}, &1)))
+    
+    master |> XPlane.Data.start
+    
+    XPlane.Cmd.start(master)
+    master |> XPlane.Cmd.send([:lights_landing_lights_toggle])
+    XPlane.Cmd.stop(master)
+  end
+  
+  test "Invalid Command" do
+    XPlane.Instance.start
+    
+    [master] = XPlane.Instance.list
+    |> Enum.filter(&(match?(%XPlane.Instance{role: :master}, &1)))
+    
+    master |> XPlane.Data.start
+    
+    XPlane.Cmd.start(master)
+    
+    assert {:error, ["Invalid command id: lights_camera_action_wiggles"]} =
+             master |> XPlane.Cmd.send([:lights_camera_action_wiggles])
+             
+    XPlane.Cmd.stop(master)
+  end
 
 end
