@@ -3,13 +3,8 @@ defmodule XPlane.Data do
   Get and set X-Plane data.
   """
   
-  defstruct [:type, :value]
-  @type t :: %XPlane.Data{
-              type: XPlane.DataRef.xtype,
-              value: binary}
   
-  
-  @startup_grace_period 2000
+  @startup_grace_period 1100
   @listen_port 59000
   
   
@@ -121,7 +116,7 @@ defmodule XPlane.Data do
           {:error, {:freq, data_ref_id, freq}}
         end
       else
-        {:error, {:DataRef_id, data_ref_id, freq}}
+        {:error, {:data_ref_id, data_ref_id, freq}}
       end
     end
     
@@ -148,7 +143,7 @@ defmodule XPlane.Data do
          case kind do
           :freq ->
             "Invalid frequency #{freq} for data reference #{data_ref_id}"
-          :DataRef_id ->
+          :data_ref_id ->
             "Invalid data reference id: #{Atom.to_string(data_ref_id)}"
          end
        end
