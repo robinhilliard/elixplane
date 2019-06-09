@@ -1,6 +1,6 @@
 defmodule XPlane.Cmd do
   @moduledoc """
-  Get and set X-Plane data.
+  Send X-Plane commands.
   """
   
   
@@ -22,6 +22,22 @@ defmodule XPlane.Cmd do
   @spec start(XPlane.Instance.t, list) :: {:ok, pid} | {:error, any} | :ignore
   def start(instance, opts \\ []) do
     GenServer.start(__MODULE__,
+      {:ok, instance},
+      [name: name(instance)] ++ opts)
+  end
+  
+  
+  @doc """
+  Start GenServer linked to current process controlling port used to send commands
+  to a specific X-Plane instance.
+  
+  ## Parameters
+  
+  - instance: X-Plane instance from list returned by `XPlane.Instance.list/0`
+  """
+  @spec start_link(XPlane.Instance.t, list) :: {:ok, pid} | {:error, any} | :ignore
+  def start_link(instance, opts \\ []) do
+    GenServer.start_link(__MODULE__,
       {:ok, instance},
       [name: name(instance)] ++ opts)
   end
