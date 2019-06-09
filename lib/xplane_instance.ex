@@ -84,6 +84,25 @@ defmodule XPlane.Instance do
     :timer.sleep(@startup_grace_period) # Allow time for beacons to be picked up
     result
   end
+  
+  
+  @doc """
+  Start GenServer linked to current process that listens for X-Plane multicast
+  beacon messages and maintains a register of received beacon details. A short
+  delay built in to the function leaves enough time for beacons to be received
+  so that subsequent calls to list return reasonable results.
+  
+  ## Parameters
+  
+  Accepts normal GenServer options apart from name which is set to the
+  module name.
+  """
+  @spec start_link(list) :: {:ok, pid} | {:error, any} | :ignore
+  def start_link(opts \\ []) do
+    result = GenServer.start_link(__MODULE__, :ok, [name: __MODULE__] ++ opts)
+    :timer.sleep(@startup_grace_period) # Allow time for beacons to be picked up
+    result
+  end
 
   
   @doc """
