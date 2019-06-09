@@ -30,6 +30,22 @@ defmodule XPlane.Data do
   
   
   @doc """
+  Start GenServer linked to current process to exchange data references with
+  a specific X-Plane instance.
+  
+  ## Parameters
+  
+  - instance: X-Plane instance from list returned by `XPlane.Instance.list/0`
+  """
+  @spec start_link(XPlane.Instance.t, list) :: {:ok, pid} | {:error, any} | :ignore
+  def start_link(instance, opts \\ []) do
+    GenServer.start_link(__MODULE__,
+      {:ok, instance},
+      [name: name(instance)] ++ opts)
+  end
+  
+  
+  @doc """
   Request updates of the specified data references at the corresponding frequency.
   Values can then be retrieved using `XPlane.Data.latest_updates/2`. A small
   delay occurs during the call to give the GenServer a chance to collect at least
@@ -42,7 +58,7 @@ defmodule XPlane.Data do
     
   ## Example
   ```
-  iex> request_updates(master, [flightmodel_position_indicated_airspeed: 10])
+  iex> XPlane.Data.request_updates(master, [flightmodel_position_indicated_airspeed: 10])
   :ok
   ```
   """
@@ -76,7 +92,7 @@ defmodule XPlane.Data do
     
   ## Example
   ```
-  iex> master |> latest_updates([:flightmodel_position_elevation])
+  iex> master |> XPlane.Data.latest_updates([:flightmodel_position_elevation])
   %{flightmodel_position_elevation: ...}`
   ```
   """
@@ -96,11 +112,11 @@ defmodule XPlane.Data do
     
   ## Example
   ```
-  iex> XPlane.Data.set(master, [flightmodel_position_elevation: 1000])
+  iex> XPlane.Data.set(master, [flightmodel_position_local_y: 1000.0])
   :ok
   ```
   """
-  @spec set(XPlane.Instance.t, list({atom, float})) :: :ok | {:error, list}
+  @spec set(XPlane.Instance.t, list({atom, number})) :: :ok | {:error, list}
   def set(instance, data_ref_id_values) do
     case GenServer.call(name(instance), {:set, data_ref_id_values}) do
       e = {:error, _} -> e
@@ -195,7 +211,12 @@ defmodule XPlane.Data do
           if is_float(value) do
             {:ok, data_refs[data_ref_id].name, value}
           else
-            {:error, {:invalid_value, {data_ref_id, value}}}
+            if is_integer(value) do
+              # Divide by 1 to force float
+              {:ok, data_refs[data_ref_id].name, value / 1}
+            else
+              {:error, {:invalid_value, {data_ref_id, value}}}
+            end
           end
         else
           {:error, {:not_writable, data_ref_id}}
