@@ -1,4 +1,8 @@
 defmodule XPLANETest do
+  @moduledoc """
+  Integration test: requires running X-Plane instance on local network
+  """
+  
   use ExUnit.Case, async: false
   
   
