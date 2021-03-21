@@ -14,12 +14,12 @@ defmodule XPLANETest do
   end
   
   test "load compatible DataRefs" do
-    data_refs = XPlane.DataRef.load_version(105000)
+    data_refs = XPlane.DataRef.load_version(115200)
     data_refs |> XPlane.DataRef.describe(~r/flightmodel_position_/)
   end
   
   test "load compatible CmdRefs" do
-    cmd_refs = XPlane.CmdRef.load_version(105000)
+    cmd_refs = XPlane.CmdRef.load_version(115200)
     cmd_refs |> XPlane.CmdRef.describe(~r/lights/)
   end
   
