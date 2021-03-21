@@ -119,7 +119,7 @@ defmodule XPlane.Instance do
     now = :erlang.system_time(:second)
     Enum.map(
       GenServer.call(__MODULE__, :list) |> Map.to_list,
-      fn {ip, {major_version, minor_version, host, version_number,
+      fn {{ip, _}, {major_version, minor_version, host, version_number,
         role, port, computer_name, last_seen}} ->
       
         %XPlane.Instance{
@@ -131,7 +131,7 @@ defmodule XPlane.Instance do
           host: [nil, :xplane, :planemaker] |> Enum.at(host),
           role: [nil, :master, :extern_visual, :ios] |> Enum.at(role),
           port: port,
-          computer_name: binary_part(computer_name, 0, byte_size(computer_name) - 1),
+          computer_name: computer_name,
           seconds_since_seen: now - last_seen
         }
       end
@@ -197,15 +197,15 @@ defmodule XPlane.Instance do
       :noreply,
       state
       |> Map.put(
-          sender_ip, {
-            major_version,
-            minor_version,
-            host,
-            version_number,
-            role,
-            port,
-            computer_name,
-            :erlang.system_time(:second)
+           {sender_ip, port}, {
+              major_version,
+              minor_version,
+              host,
+              version_number,
+              role,
+              port,
+              computer_name |> String.split(<<0>>) |> List.first,
+              :erlang.system_time(:second)
           }
       )
     }
